@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>TFC Staff — Client Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0A1520;--card:#111E2E;--card2:#162030;--border:#1E3048;--gold:#D4B86A;--gold-dim:rgba(212,184,106,.12);--gold-border:rgba(212,184,106,.25);--text:#E8E0D5;--muted:#5A7A9A;--muted2:#3A5A7A;--red:#E74C3C;--red-dim:rgba(231,76,60,.08);--red-border:rgba(231,76,60,.3);--amber:#E67E22;--amber-dim:rgba(230,126,34,.08);--amber-border:rgba(230,126,34,.3);--green:#27AE60;--green-dim:rgba(39,174,96,.08);--green-border:rgba(39,174,96,.3);}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.4;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");}
+#app{position:relative;z-index:1;height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* PIN */
+#ps{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.pl{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--text);}
+.pl span{color:var(--gold);}
+.pr{width:36px;height:1px;background:var(--gold-border);margin:14px auto 18px;}
+.pt{font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);margin-bottom:26px;}
+.pds{display:flex;gap:14px;margin-bottom:24px;}
+.pd{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--muted2);transition:all .2s;}
+.pd.on{background:var(--gold);border-color:var(--gold);}
+.pd.err{background:var(--red);border-color:var(--red);}
+.pp{display:grid;grid-template-columns:repeat(3,70px);gap:10px;}
+.pb{height:70px;border-radius:50%;background:var(--card);border:1px solid var(--border);font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--text);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;}
+.pb:active{transform:scale(.9);background:var(--gold-dim);}
+.pb.del{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--muted);}
+.pb.empty{border:none;background:transparent;pointer-events:none;}
+.pe{font-size:10px;color:var(--red);letter-spacing:.1em;height:14px;text-align:center;margin-top:-8px;margin-bottom:8px;}
+
+/* TOP BAR */
+.tb{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.tl{font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;}
+.tl span{color:var(--gold);}
+.tbg{display:flex;align-items:center;gap:6px;background:var(--red-dim);border:1px solid var(--red-border);border-radius:2px;padding:3px 10px;font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--red);}
+.tr{display:flex;align-items:center;gap:10px;}
+.td{font-size:10px;color:var(--muted);}
+.btn{font-size:9px;letter-spacing:.15em;text-transform:uppercase;padding:7px 14px;border-radius:2px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;}
+.btn-r{background:var(--gold-dim);border:1px solid var(--gold-border);color:var(--gold);}
+.btn-l{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn-r:hover{background:rgba(212,184,106,.2);}
+.btn-l:hover{color:var(--text);border-color:var(--muted);}
+
+/* LAYOUT */
+.main{display:flex;flex:1;overflow:hidden;}
+.sb{width:300px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.dp{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.dp::-webkit-scrollbar{width:3px;}
+.dp::-webkit-scrollbar-thumb{background:var(--border);}
+
+/* SIDEBAR */
+.ss{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.si{width:100%;padding:9px 12px;background:var(--card2);border:1px solid var(--border);border-radius:2px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);outline:none;letter-spacing:.03em;}
+.si:focus{border-color:var(--gold-border);}
+.si::placeholder{color:var(--muted);}
+.sts{padding:8px 14px;display:flex;gap:14px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.st{font-size:9px;color:var(--muted);}
+.st strong{color:var(--gold);font-size:13px;font-weight:400;display:block;}
+.sl{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.sl::-webkit-scrollbar{width:3px;}
+.sl::-webkit-scrollbar-thumb{background:var(--border);}
+
+/* CLIENT ROW */
+.cr{padding:13px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;display:flex;align-items:flex-start;gap:9px;}
+.cr:hover{background:var(--card2);}
+.cr.active{background:var(--card);border-left:3px solid var(--gold);padding-left:11px;}
+.cav{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:500;}
+.ci{flex:1;min-width:0;}
+.cn{font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cc{font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ct{font-size:9px;color:var(--muted2);margin-top:2px;}
+.cfl{display:flex;gap:4px;margin-top:4px;}
+.cf{width:6px;height:6px;border-radius:50%;}
+
+/* STATES */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;}
+.spin{width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:sp .8s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg)}}
+.ltxt{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;padding:30px;text-align:center;}
+.ei{font-size:32px;opacity:.25;}
+.et{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;color:var(--muted);}
+.es{font-size:10px;color:var(--muted2);letter-spacing:.06em;line-height:1.7;}
+.nosel{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;padding:50px;text-align:center;}
+.nsi{font-size:32px;opacity:.15;}
+.nst{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;color:var(--muted);}
+.nss{font-size:10px;color:var(--muted2);letter-spacing:.08em;line-height:1.8;}
+
+/* DETAIL */
+.dh{padding:20px 24px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,var(--card),var(--bg));flex-shrink:0;}
+.dbadge{display:inline-flex;align-items:center;gap:5px;background:var(--gold-dim);border:1px solid var(--gold-border);border-radius:2px;padding:3px 10px;font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
+.dname{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;color:var(--text);letter-spacing:.04em;margin-bottom:2px;}
+.dmeta{font-size:10px;color:var(--muted);letter-spacing:.05em;}
+.db{padding:18px 24px;}
+.sh{font-size:8px;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);margin:16px 0 9px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.sh:first-child{margin-top:0;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:4px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:4px;}
+.g1{display:grid;grid-template-columns:1fr;gap:7px;margin-bottom:4px;}
+.dc{background:var(--card);border:1px solid var(--border);border-radius:3px;padding:10px 13px;}
+.dc.full{grid-column:1/-1;}
+.dc.red{border-color:var(--red-border);background:var(--red-dim);}
+.dc.amber{border-color:var(--amber-border);background:var(--amber-dim);}
+.dc.green{border-color:var(--green-border);background:var(--green-dim);}
+.dl{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.dv{font-size:12px;color:var(--text);font-weight:300;line-height:1.5;}
+.dv strong{color:var(--gold);font-weight:400;}
+.fr{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);}
+.fr:last-child{border-bottom:none;}
+.fd{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.fd.red{background:var(--red);}
+.fd.amber{background:var(--amber);}
+.fd.green{background:var(--green);}
+.ft{font-size:11px;color:var(--text);font-weight:400;}
+.fs{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.5;}
+.sr{display:flex;align-items:center;gap:9px;margin-bottom:7px;}
+.sn{font-size:10px;color:var(--muted);width:135px;flex-shrink:0;}
+.st2{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+.sf{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--gold),#F0D090);}
+.sf.c{background:linear-gradient(90deg,var(--red),var(--amber));}
+.sv{font-size:10px;color:var(--text);width:30px;text-align:right;flex-shrink:0;}
+.tx{background:var(--card);border:1px solid var(--border);border-radius:3px;padding:13px 15px;margin-bottom:7px;}
+.txh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;}
+.txn{font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--text);}
+.txb{font-size:8px;letter-spacing:.13em;text-transform:uppercase;padding:3px 9px;border-radius:1px;}
+.txb.best{background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold-border);}
+.txb.good{background:var(--green-dim);color:#6DBF6D;border:1px solid var(--green-border);}
+.txb.opt{background:rgba(41,128,185,.08);color:#7AACCC;border:1px solid rgba(41,128,185,.25);}
+.txw{font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:5px;}
+.txf{display:flex;gap:14px;}
+.txp{font-size:11px;color:var(--gold);}
+.txs{font-size:10px;color:var(--muted2);}
+.jw{background:var(--card);border:1px solid var(--border);border-radius:3px;padding:16px;}
+.jt{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;color:var(--text);margin-bottom:2px;}
+.js{font-size:10px;color:var(--muted);margin-bottom:12px;}
+.jst{display:flex;gap:11px;margin-bottom:11px;padding-bottom:11px;border-bottom:1px solid var(--border);}
+.jst:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.jn{width:24px;height:24px;border-radius:50%;background:var(--gold-dim);border:1px solid var(--gold-border);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:12px;color:var(--gold);flex-shrink:0;}
+.jil{font-size:8px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
+.jim{font-size:12px;color:var(--text);font-weight:400;margin-bottom:2px;}
+.jid{font-size:10px;color:var(--muted);line-height:1.5;}
+.jitm{font-size:10px;color:var(--gold);margin-top:3px;font-style:italic;}
+.qt{background:var(--card2);border-left:3px solid var(--gold);padding:10px 14px;border-radius:0 3px 3px 0;margin-bottom:7px;}
+.ql2{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+.qv{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;color:var(--text);line-height:1.6;}
+.mob-back{display:none;align-items:center;gap:6px;font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);cursor:pointer;padding:7px 14px;border:1px solid var(--border);border-radius:2px;background:transparent;font-family:'DM Sans',sans-serif;}
+
+/* ═══════════════ RESPONSIVE ═══════════════ */
+
+/* ── TABLET 900px ── */
+@media (max-width: 900px) {
+  .sb{width:260px;}
+  .dh{padding:16px 18px;}
+  .db{padding:14px 18px;}
+  .dc{padding:9px 12px;}
+  .g3{grid-template-columns:1fr 1fr;}
+  .dname{font-size:22px;}
+  .sn{width:110px;}
+  .txn{font-size:15px;}
+}
+
+/* ── MOBILE 600px — sidebar becomes full-screen drawer ── */
+@media (max-width: 600px) {
+  /* Top bar compress */
+  .tb{padding:10px 14px;}
+  .tl{font-size:12px;letter-spacing:.12em;}
+  .td{display:none;}
+
+  /* Sidebar = full screen by default */
+  .main{flex-direction:column;}
+  .sb{width:100%;height:100%;border-right:none;}
+
+  /* When client selected — hide sidebar, show detail */
+  .main.client-open .sb{display:none;}
+  .main.client-open .dp{flex:1;}
+
+  /* Back button */
+  .mob-back{display:flex !important;}
+
+  /* Detail panel */
+  .dp{width:100%;}
+  .dh{padding:14px 16px;}
+  .db{padding:12px 16px;}
+  .dc{padding:9px 11px;}
+  .dc.full{grid-column:1/-1;}
+
+  /* All grids → single column on phone */
+  .g2{grid-template-columns:1fr;}
+  .g3{grid-template-columns:1fr;}
+  .g1{grid-template-columns:1fr;}
+
+  /* Typography */
+  .dname{font-size:21px;}
+  .dmeta{font-size:10px;}
+  .dl{font-size:7px;}
+  .dv{font-size:12px;}
+  .sh{font-size:8px;}
+
+  /* Score bars */
+  .sr{gap:7px;}
+  .sn{width:90px;font-size:9px;}
+  .sv{font-size:9px;}
+
+  /* Treatment cards */
+  .tx{padding:11px 12px;}
+  .txn{font-size:14px;}
+  .txw{font-size:10px;}
+  .txp{font-size:10px;}
+  .txf{flex-direction:column;gap:3px;}
+
+  /* Journey */
+  .jw{padding:12px 14px;}
+  .jt{font-size:16px;}
+  .jst{gap:9px;}
+  .jn{width:22px;height:22px;font-size:11px;}
+  .jim{font-size:11px;}
+  .jid{font-size:10px;}
+
+  /* Flags */
+  .ft{font-size:10px;}
+  .fs{font-size:9px;}
+
+  /* Stats */
+  .sts{gap:8px;padding:6px 12px;}
+  .st strong{font-size:12px;}
+  .st{font-size:8px;}
+
+  /* Search */
+  .ss{padding:10px 12px;}
+  .si{font-size:11px;}
+
+  /* Client rows */
+  .cr{padding:11px 12px;}
+  .cn{font-size:12px;}
+  .cc{font-size:10px;}
+}
+
+/* ── VERY SMALL 380px ── */
+@media (max-width: 380px) {
+  .tb{padding:8px 12px;}
+  .tl{font-size:11px;}
+  .dh{padding:12px 14px;}
+  .db{padding:10px 14px;}
+  .dname{font-size:19px;}
+  .pp{grid-template-columns:repeat(3,60px);}
+  .pb{height:60px;font-size:22px;}
+}
+</style>
+</head>
+<body>
+
+<!-- PIN -->
+<div id="ps">
+  <div class="pl">The <span>Face</span> Company</div>
+  <div class="pr"></div>
+  <div class="pt">Staff Access · Enter PIN</div>
+  <div class="pds" id="pds">
+    <div class="pd" id="pd0"></div><div class="pd" id="pd1"></div>
+    <div class="pd" id="pd2"></div><div class="pd" id="pd3"></div>
+  </div>
+  <div class="pe" id="pe"></div>
+  <div class="pp">
+    <button class="pb" onclick="pp('1')">1</button><button class="pb" onclick="pp('2')">2</button><button class="pb" onclick="pp('3')">3</button>
+    <button class="pb" onclick="pp('4')">4</button><button class="pb" onclick="pp('5')">5</button><button class="pb" onclick="pp('6')">6</button>
+    <button class="pb" onclick="pp('7')">7</button><button class="pb" onclick="pp('8')">8</button><button class="pb" onclick="pp('9')">9</button>
+    <button class="pb empty"></button><button class="pb" onclick="pp('0')">0</button><button class="pb del" onclick="pd()">⌫</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none;flex-direction:column;">
+  <div class="tb">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="tl">The <span>Face</span> Company</div>
+      <div class="tbg">⬤ Staff Intelligence</div>
+    </div>
+    <div class="tr">
+      <div class="td" id="tclock"></div>
+      <button class="mob-back" id="mob-back" onclick="mobileBack()">← Back</button>
+      <button class="btn btn-r" onclick="load()">↻ Refresh</button>
+      <button class="btn btn-l" onclick="lock()">Lock</button>
+    </div>
+  </div>
+  <div class="main" id="ml">
+    <div class="sb">
+      <div class="ss"><input class="si" id="si" placeholder="Search name, concern, mobile…" oninput="filter()"></div>
+      <div class="sts">
+        <div class="st"><strong id="s-tot">—</strong>Total</div>
+        <div class="st"><strong id="s-red">—</strong>Red Flags</div>
+        <div class="st"><strong id="s-brd">—</strong>Bridal</div>
+      </div>
+      <div class="sl" id="sl"><div class="loading"><div class="spin"></div><div class="ltxt">Loading…</div></div></div>
+    </div>
+    <div class="dp" id="dp">
+      <div class="nosel"><div class="nsi">✦</div><div class="nst">Select a client</div><div class="nss">All form submissions appear in the list.<br>Click any name to see their full<br>clinical intelligence profile.</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API='https://script.google.com/macros/s/AKfycbxOFCkEr2laKQlCp7yd9yGOI-1Zyht9_uQzFgtGxI4CQzrNnHJpgKVFjVJQbQHfLHuyPg/exec';
+const PIN='2580';
+let pv='',clients=[],sel=null;
+const COLORS=['#D4B86A','#6DBF9A','#7AACCC','#CC7A9A','#A07ACC','#CC9A5A'];
+
+// Normalize form field keys to readable names
+function normalize(c){
+  if(c['Name']||c['Skin Type']) return c;
+  return {
+    'Name': c.name||'',
+    'Mobile': c.mobile||'',
+    'DOB': c.dob||'',
+    'Gender': c['f-gender']||'',
+    'Visit Type': c['f-vtype']||'First Visit',
+    'Delhi Years': c['f-delhi-yrs']||'',
+    'Skin Type': c['f-stype']||'',
+    'Skin In Own Words': c.skinWords||'',
+    'Skin Duration': c['f-duration']||'',
+    'Skin Change 12m': c['f-change12']||'',
+    'Sensitivity': c['f-sens']||'',
+    'Primary Concern': c['f-concern1']||'',
+    'Secondary Concerns': Array.isArray(c['f-concern2'])?c['f-concern2'].join(', '):(c['f-concern2']||''),
+    'PIH History': c['f-pih']||'',
+    'Melasma History': c['f-melasma']||'',
+    'Current Routine': c['f-routine']||'',
+    'Actives Used': Array.isArray(c['f-actives'])?c['f-actives'].join(', '):(c['f-actives']||''),
+    'Fairness Products': c['f-fair']||'',
+    'Ayurvedic Remedies': c['f-ayurvedic']||'',
+    'Threading Frequency': c['f-threading']||'',
+    'Double Cleanse': c['f-dblclean']||'',
+    'Conditions': Array.isArray(c['f-conditions'])?c['f-conditions'].join(', '):(c['f-conditions']||''),
+    'Pregnancy Status': c['f-preg']||'No',
+    'Medication Details': c.medsTxt||'',
+    'Allergies': c['f-allergies']||'',
+    'Allergy Details': c.allergyTxt||'',
+    'Previous Procedures': Array.isArray(c['f-procedures'])?c['f-procedures'].join(', '):(c['f-procedures']||''),
+    'Reaction Details': c.reactionTxt||'',
+    'Pollution Exposure': c['f-pollution']||'',
+    'Smog Sensitivity': c['f-smog']||'',
+    'Pollution Symptoms': Array.isArray(c['f-pol-sym'])?c['f-pol-sym'].join(', '):(c['f-pol-sym']||''),
+    'Air Purifier': c['f-purifier']||'',
+    'SPF Usage': c['f-spf']||'',
+    'SPF Reapply': c['f-spf-reapply']||'',
+    'Sleep': c['f-sleep']||'',
+    'Diet': c['f-diet']||'',
+    'Stress (1-5)': c['f-stress']||'',
+    'Water': c['f-water']||'',
+    'Smoking': c['f-smoke']||'',
+    'Exercise': c['f-exercise']||'',
+    'Gut Health': c['f-gut']||'',
+    'Occasions': Array.isArray(c['f-occ'])?c['f-occ'].join(', '):(c['f-occ']||''),
+    'Occasion Date': c.occDate||'',
+    'Occasion Importance': c['f-occ-imp']||'',
+    'Occasion Weeks': c['f-occ-weeks']||'',
+    'Primary Goal': c['f-goal']||'',
+    'Ideal Skin': c['f-ideal']||'',
+    'Budget': c['f-budget']||'',
+    'Approach': c['f-approach']||'',
+    'Expectations': c.expect||'',
+    'Source': c['f-source']||'',
+    'Timestamp': c['Timestamp']||'',
+    'Score: Hydration': (c.scores&&c.scores.hydration)||5,
+    'Score: Pollution': (c.scores&&c.scores.pollution)||5,
+    'Score: Stress': (c.scores&&c.scores.stress)||5,
+    'Score: Sensitivity': (c.scores&&c.scores.sensitivity)||5,
+    'Score: Readiness': (c.scores&&c.scores.readiness)||5,
+  };
+}
+
+// PIN
+function pp(d){if(pv.length>=4)return;pv+=d;dots();if(pv.length===4)setTimeout(check,180);}
+function pd(){pv=pv.slice(0,-1);dots();document.getElementById('pe').textContent='';}
+function dots(e){for(let i=0;i<4;i++){const d=document.getElementById('pd'+i);d.classList.toggle('on',i<pv.length);if(e)d.classList.add('err');else d.classList.remove('err');}}
+function check(){
+  if(pv===PIN){
+    document.getElementById('ps').style.display='none';
+    const a=document.getElementById('app');a.style.display='flex';
+    clock();load();
+  } else {
+    dots(true);document.getElementById('pe').textContent='Incorrect PIN';
+    setTimeout(()=>{pv='';dots();document.getElementById('pe').textContent='';},1200);
+  }
+}
+function lock(){pv='';dots();document.getElementById('ps').style.display='flex';document.getElementById('app').style.display='none';}
+
+// CLOCK
+function clock(){
+  document.getElementById('tclock').textContent=new Date().toLocaleString('en-IN',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  setTimeout(clock,30000);
+}
+
+// LOAD
+function load(){
+  const sl=document.getElementById('sl');
+  sl.innerHTML='<div class="loading"><div class="spin"></div><div class="ltxt">Loading…</div></div>';
+  fetch(API)
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.status==='success'){clients=(d.clients||[]).map(normalize);render(clients);stats(clients);}
+      else{sl.innerHTML=`<div class="empty"><div class="ei">⚠</div><div class="et">Error</div><div class="es">${d.message||'Could not load'}</div></div>`;}
+    })
+    .catch(()=>{
+      sl.innerHTML='<div class="empty"><div class="ei">📋</div><div class="et">No submissions yet</div><div class="es">Profiles appear here<br>once the client form is submitted.</div></div>';
+      clients=[];stats([]);
+    });
+}
+
+function render(list){
+  const sl=document.getElementById('sl');
+  if(!list.length){sl.innerHTML='<div class="empty"><div class="ei">📋</div><div class="et">No clients</div><div class="es">No submissions found.</div></div>';return;}
+  sl.innerHTML=list.map((c,i)=>{
+    const orig=clients.indexOf(c);
+    const name=c['Name']||'Unknown';
+    const init=name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase()||'?';
+    const col=COLORS[orig%COLORS.length];
+    const fl=flags(c);
+    const hasRed=fl.some(f=>f.c==='red');const hasAmber=fl.some(f=>f.c==='amber');
+    return `<div class="cr ${sel===orig?'active':''}" onclick="pick(${orig})">
+      <div class="cav" style="background:${col}18;border:1.5px solid ${col}35;color:${col}">${init}</div>
+      <div class="ci">
+        <div class="cn">${name}</div>
+        <div class="cc">${c['Primary Concern']||c['Primary Goal']||'—'}</div>
+        <div class="ct">${fmtTs(c['Timestamp'])}</div>
+        <div class="cfl">
+          ${hasRed?'<div class="cf" style="background:#E74C3C"></div>':''}
+          ${hasAmber?'<div class="cf" style="background:#E67E22"></div>':''}
+          ${(c['Occasions']||'').includes('Bride')?'<div class="cf" style="background:#D4B86A"></div>':''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filter(){
+  const q=document.getElementById('si').value.toLowerCase();
+  if(!q){render(clients);return;}
+  render(clients.filter(c=>(c['Name']||'').toLowerCase().includes(q)||(c['Mobile']||'').includes(q)||(c['Primary Concern']||'').toLowerCase().includes(q)));
+}
+
+function stats(list){
+  document.getElementById('s-tot').textContent=list.length;
+  document.getElementById('s-red').textContent=list.filter(c=>flags(c).some(f=>f.c==='red')).length;
+  document.getElementById('s-brd').textContent=list.filter(c=>(c['Occasions']||'').includes('Bride')).length;
+}
+
+// SELECT
+function pick(i){
+  sel=i;render(clients);detail(clients[i]);
+  // Mobile: hide sidebar, show detail
+  if(window.innerWidth<=600){
+    document.getElementById('ml').classList.add('client-open');
+    document.getElementById('mob-back').style.display='flex';
+  }
+}
+function mobileBack(){
+  document.getElementById('ml').classList.remove('client-open');
+  document.getElementById('mob-back').style.display='none';
+  sel=null;render(clients);
+}
+
+function detail(c){
+  const dp=document.getElementById('dp');
+  const fl=flags(c); const sc=scores(c); const tx=treatments(c,sc); const jn=journey(c,sc);
+  const name=c['Name']||'Client';
+  const init=name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+  const col=COLORS[sel%COLORS.length];
+  const age=calcAge(c['DOB']);
+  const hasRed=fl.some(f=>f.c==='red');const hasAmber=fl.some(f=>f.c==='amber');
+
+  dp.innerHTML=`
+  <div class="dh">
+    <div style="display:flex;align-items:center;gap:13px;margin-bottom:8px;">
+      <div style="width:44px;height:44px;border-radius:50%;background:${col}18;border:2px solid ${col}30;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:18px;color:${col};flex-shrink:0">${init}</div>
+      <div>
+        <div class="dbadge">⬤ STAFF — CONFIDENTIAL</div>
+        <div class="dname">${name}</div>
+        <div class="dmeta">${c['Mobile']||'—'} · ${age} · ${c['Gender']||'—'} · ${c['Visit Type']||'First Visit'} · ${fmtTs(c['Timestamp'])}</div>
+      </div>
+    </div>
+  </div>
+  <div class="db">
+
+    <div class="sh">Client Overview</div>
+    <div class="g2">
+      <div class="dc"><div class="dl">Skin Type</div><div class="dv"><strong>${c['Skin Type']||'—'}</strong></div></div>
+      <div class="dc"><div class="dl">Primary Concern</div><div class="dv"><strong>${c['Primary Concern']||'—'}</strong></div></div>
+      <div class="dc"><div class="dl">Concern Duration</div><div class="dv">${c['Skin Duration']||'—'}</div></div>
+      <div class="dc"><div class="dl">Sensitivity</div><div class="dv">${c['Sensitivity']||'—'}/5</div></div>
+      <div class="dc" ${c['Pregnancy Status']!=='No'?'style="border-color:var(--red-border);background:var(--red-dim)"':''}><div class="dl">Pregnancy</div><div class="dv"><strong style="color:${c['Pregnancy Status']==='No'?'#27AE60':'#E74C3C'}">${c['Pregnancy Status']||'—'}</strong></div></div>
+      <div class="dc"><div class="dl">Budget</div><div class="dv"><strong>${c['Budget']||'—'}</strong></div></div>
+      <div class="dc"><div class="dl">Today's Goal</div><div class="dv">${c['Primary Goal']||'—'}</div></div>
+      <div class="dc"><div class="dl">Ideal Skin</div><div class="dv">${c['Ideal Skin']||'—'}</div></div>
+      <div class="dc"><div class="dl">Approach</div><div class="dv">${c['Approach']||'—'}</div></div>
+      <div class="dc"><div class="dl">Source</div><div class="dv">${c['Source']||'—'}</div></div>
+      <div class="dc full"><div class="dl">Occasions</div><div class="dv">${c['Occasions']||'None'}</div></div>
+    </div>
+
+    <div class="sh">Safety Flags & Contraindications</div>
+    <div class="dc full ${hasRed?'red':hasAmber?'amber':'green'}">
+      ${fl.map(f=>`<div class="fr"><div class="fd ${f.c}"></div><div><div class="ft">${f.t}</div><div class="fs">${f.s}</div></div></div>`).join('')}
+    </div>
+
+    <div class="sh">Skin Intelligence Scores</div>
+    <div class="dc full">
+      ${[{n:'Hydration Index',k:'hydration',c:false},{n:'Pollution Damage Load',k:'pollution',c:true},{n:'Stress / Lifestyle Load',k:'stress',c:true},{n:'Sensitivity Score',k:'sensitivity',c:true},{n:'Treatment Readiness',k:'readiness',c:false}].map(r=>`
+        <div class="sr"><div class="sn">${r.n}</div><div class="st2"><div class="sf ${r.c?'c':''}" style="width:${Math.round(sc[r.k]/10*100)}%"></div></div><div class="sv">${sc[r.k]}/10</div></div>`).join('')}
+    </div>
+
+    <div class="sh">Delhi Pollution Profile</div>
+    <div class="g2">
+      <div class="dc"><div class="dl">Exposure Level</div><div class="dv"><strong>${c['Pollution Exposure']||'—'}</strong></div></div>
+      <div class="dc"><div class="dl">Smog Sensitivity</div><div class="dv">${c['Smog Sensitivity']||'—'}</div></div>
+      <div class="dc ${(c['SPF Usage']||'').includes('Rarely')?'red':''}"><div class="dl">SPF Habit</div><div class="dv"><strong>${c['SPF Usage']||'—'}</strong></div></div>
+      <div class="dc"><div class="dl">SPF Reapplication</div><div class="dv">${c['SPF Reapply']||'—'}</div></div>
+      <div class="dc full"><div class="dl">Pollution Symptoms</div><div class="dv">${c['Pollution Symptoms']||'None reported'}</div></div>
+      <div class="dc"><div class="dl">Double Cleanse</div><div class="dv">${c['Double Cleanse']||'—'}</div></div>
+      <div class="dc"><div class="dl">Air Purifier</div><div class="dv">${c['Air Purifier']||'—'}</div></div>
+    </div>
+
+    <div class="sh">Lifestyle Load</div>
+    <div class="g3">
+      <div class="dc"><div class="dl">Sleep</div><div class="dv">${c['Sleep']||'—'}</div></div>
+      <div class="dc"><div class="dl">Stress</div><div class="dv">${c['Stress (1-5)']||'—'}/5</div></div>
+      <div class="dc"><div class="dl">Water</div><div class="dv">${c['Water']||'—'}</div></div>
+      <div class="dc"><div class="dl">Exercise</div><div class="dv">${c['Exercise']||'—'}</div></div>
+      <div class="dc"><div class="dl">Smoking</div><div class="dv">${c['Smoking']||'—'}</div></div>
+      <div class="dc"><div class="dl">Diet</div><div class="dv">${c['Diet']||'—'}</div></div>
+    </div>
+
+    <div class="sh">Current Skincare</div>
+    <div class="g2">
+      <div class="dc"><div class="dl">Routine Level</div><div class="dv">${c['Current Routine']||'—'}</div></div>
+      <div class="dc"><div class="dl">Active Ingredients</div><div class="dv">${c['Actives Used']||'None'}</div></div>
+      <div class="dc"><div class="dl">Fairness Products</div><div class="dv">${c['Fairness Products']||'—'}</div></div>
+      <div class="dc"><div class="dl">Home Remedies</div><div class="dv">${c['Ayurvedic Remedies']||'—'}</div></div>
+      <div class="dc"><div class="dl">Threading</div><div class="dv">${c['Threading Frequency']||'—'}</div></div>
+      <div class="dc"><div class="dl">Secondary Concerns</div><div class="dv">${c['Secondary Concerns']||'None'}</div></div>
+    </div>
+
+    <div class="sh">Medical History</div>
+    <div class="g2">
+      <div class="dc ${c['On Medications']==='Yes'?'amber':''}"><div class="dl">Medications</div><div class="dv">${c['On Medications']||'—'}${c['Medication Details']?' — '+c['Medication Details']:''}</div></div>
+      <div class="dc full"><div class="dl">Conditions</div><div class="dv">${c['Conditions']||'None'}</div></div>
+      <div class="dc"><div class="dl">Allergies</div><div class="dv">${c['Allergies']||'None'}${c['Allergy Details']?' — '+c['Allergy Details']:''}</div></div>
+      <div class="dc"><div class="dl">Previous Procedures</div><div class="dv">${c['Previous Procedures']||'None'}</div></div>
+      ${c['Reaction Details']?`<div class="dc full red"><div class="dl">⚠ Previous Reaction</div><div class="dv">${c['Reaction Details']}</div></div>`:''}
+    </div>
+
+    <div class="sh">Treatment Suggestions</div>
+    ${tx.map(t=>`<div class="tx"><div class="txh"><div class="txn">${t.name}</div><div class="txb ${t.rank}">${t.rl}</div></div><div class="txw">${t.why}</div><div class="txf"><div class="txp">${t.price}</div><div class="txs">${t.sess}</div></div></div>`).join('')}
+
+    <div class="sh">Preliminary Face Journey</div>
+    <div class="jw">
+      <div class="jt">${jn.title}</div>
+      <div class="js">${jn.sub}</div>
+      ${jn.steps.map(s=>`<div class="jst"><div class="jn">${s.n}</div><div><div class="jil">${s.l}</div><div class="jim">${s.name}</div><div class="jid">${s.desc}</div><div class="jitm">${s.timing}</div></div></div>`).join('')}
+    </div>
+
+    <div class="sh">Client's Own Words</div>
+    ${c['Skin In Own Words']?`<div class="qt"><div class="ql2">In their words</div><div class="qv">"${c['Skin In Own Words']}"</div></div>`:''}
+    ${c['Expectations']?`<div class="qt"><div class="ql2">What would make today 10/10</div><div class="qv">"${c['Expectations']}"</div></div>`:''}
+    ${!c['Skin In Own Words']&&!c['Expectations']?'<div class="dc full"><div class="dv" style="color:var(--muted)">No notes provided.</div></div>':''}
+
+    <div style="height:36px"></div>
+  </div>`;
+  dp.scrollTop=0;
+}
+
+// FLAGS
+function flags(c){
+  const f=[];
+  if((c['Pregnancy Status']||'').includes('Pregnant'))f.push({c:'red',t:'PREGNANT',s:'Avoid: retinoids, salicylic acid, deep peels, laser, electric stimulation'});
+  if((c['Pregnancy Status']||'').includes('Breast'))f.push({c:'red',t:'BREASTFEEDING',s:'Avoid retinoids, strong actives, certain essential oils'});
+  if((c['Medication Details']||'').toLowerCase().includes('isotret'))f.push({c:'red',t:'CHECK ISOTRETINOIN',s:'No chemical peels, waxing, or aggressive exfoliation for 6 months post-course'});
+  if((c['Conditions']||'').includes('Keloid'))f.push({c:'red',t:'KELOID HISTORY',s:'Avoid laser, deep needling, any barrier-breaking procedure'});
+  if(c['Reaction Details'])f.push({c:'red',t:'PREVIOUS REACTION',s:c['Reaction Details']});
+  const al=(c['Allergies']||'').replace('No known allergies','').trim();
+  if(al)f.push({c:'amber',t:'KNOWN ALLERGIES',s:al+(c['Allergy Details']?' — '+c['Allergy Details']:'')});
+  if((c['Previous Procedures']||'').includes('Laser'))f.push({c:'amber',t:'RECENT LASER',s:'Skin may be sensitised — confirm timing before active treatments'});
+  if((c['Previous Procedures']||'').includes('peel'))f.push({c:'amber',t:'RECENT PEEL',s:'Barrier may be compromised — avoid exfoliating actives'});
+  if((c['Previous Procedures']||'').match(/Botox|filler/i))f.push({c:'amber',t:'RECENT INJECTABLES',s:'Avoid facial massage on treated areas'});
+  if((c['Actives Used']||'').includes('Retinol'))f.push({c:'amber',t:'ON RETINOIDS',s:'Avoid strong AHA/BHA same day — skin sensitised'});
+  if((c['Conditions']||'').includes('Rosacea'))f.push({c:'amber',t:'ROSACEA',s:'Avoid heat, acids, aggressive massage'});
+  if((c['Conditions']||'').match(/Herpes|Cold sore/i))f.push({c:'amber',t:'COLD SORE HISTORY',s:'Check for active outbreak before perioral work'});
+  if((c['PIH History']||'').includes('severe'))f.push({c:'amber',t:'SEVERE PIH HISTORY',s:'High darkening risk — avoid aggressive exfoliation or heat without preparation'});
+  if(!f.length)f.push({c:'green',t:'NO SAFETY FLAGS',s:'No contraindications identified. Proceed with planned treatment.'});
+  return f;
+}
+
+// SCORES
+function scores(c){
+  const s=c['Score: Hydration'];
+  if(s&&!isNaN(parseInt(s)))return{hydration:parseInt(c['Score: Hydration'])||5,pollution:parseInt(c['Score: Pollution'])||5,stress:parseInt(c['Score: Stress'])||5,sensitivity:parseInt(c['Score: Sensitivity'])||5,readiness:parseInt(c['Score: Readiness'])||5};
+  const cl=(v,a,b)=>Math.min(b,Math.max(a,v));
+  let h=5;
+  if((c['Water']||'').includes('2L+'))h+=2;else if((c['Water']||'').includes('1.5'))h+=1;else if((c['Water']||'').includes('Under 1'))h-=2;
+  if((c['Sleep']||'').includes('Excellent'))h+=2;else if((c['Sleep']||'').includes('Poor'))h-=2;
+  h=cl(h,1,10);
+  const pm={'Minimal':2,'Low':3,'Moderate':5,'High':7,'Very High':9};
+  let p=pm[c['Pollution Exposure']]||3;
+  if((c['Smog Sensitivity']||'').includes('significantly'))p=cl(p+2,1,10);
+  if((c['SPF Usage']||'').includes('Rarely'))p=cl(p+1,1,10);
+  let st=parseInt(c['Stress (1-5)']||3)*2;
+  if((c['Sleep']||'').includes('Poor'))st=cl(st+2,1,10);
+  let se=parseInt(c['Sensitivity']||3)*2;
+  if((c['Skin Type']||'').includes('Sensitive'))se=cl(se+2,1,10);
+  let r=10-Math.round((st+p)/3);
+  if((c['Pregnancy Status']||'').includes('Pregnant'))r=cl(r-3,1,10);
+  r=cl(r,1,10);
+  return{hydration:h,pollution:p,stress:cl(st,1,10),sensitivity:cl(se,1,10),readiness:r};
+}
+
+// TREATMENTS
+function treatments(c,s){
+  const concern=c['Primary Concern']||'';const occs=c['Occasions']||'';
+  const preg=(c['Pregnancy Status']||'').match(/Pregnant|Breast/);
+  const hasPol=['High','Very High','Moderate'].includes(c['Pollution Exposure']||'');
+  const t=[];
+  if(concern.includes('Acne')){
+    t.push({name:'Deep Pore Cleansing Facial',rank:'best',rl:'Best Match',why:`Active acne — deep cleansing targets congestion. Sensitivity ${s.sensitivity}/10 — begin conservatively.`,price:'₹3,500–5,000',sess:'4–6 sessions monthly'});
+    if(!preg)t.push({name:'Salicylic Acid Treatment',rank:'good',rl:'Recommended',why:'BHA exfoliation targets oil-soluble congestion deep in pores.',price:'₹4,500–6,500',sess:'3–4 sessions, 3 weeks apart'});
+  }else if(concern.includes('Pigmentation')){
+    t.push({name:'Brightening & Pigmentation Correction',rank:'best',rl:'Best Match',why:`Vitamin C + kojic acid + barrier repair. Pollution ${s.pollution}/10 — antioxidants essential.`,price:'₹5,000–8,000',sess:'6 sessions every 2–3 weeks'});
+    if(!preg)t.push({name:'Mandelic Acid Peel',rank:'good',rl:'Recommended',why:'Preferred AHA for Indian skin — lower PIH risk than glycolic.',price:'₹4,000–7,000',sess:'4–6, 3 weeks apart'});
+  }else if(concern.includes('Dullness')){
+    t.push({name:'Radiance & Glow Facial',rank:'best',rl:'Best Match',why:`Pollution score ${s.pollution}/10 — antioxidant-rich + enzymatic exfoliation restores glow.`,price:'₹4,500–7,000',sess:'First 3 monthly'});
+    t.push({name:'Pollution Detox Facial',rank:'good',rl:'Recommended',why:'TFC signature — removes PM2.5, repairs barrier, neutralises free radical damage.',price:'₹5,000–7,500',sess:'Every 3–4 weeks'});
+  }else if(concern.includes('Ageing')){
+    t.push({name:'Face Pilates (Facial Workout)',rank:'best',rl:'Best Match',why:'Non-invasive — lifts, tones, stimulates circulation. No contraindications.',price:'₹4,000–6,500',sess:'4+1 package to start'});
+    if(!preg)t.push({name:'Anti-Ageing Hydrating Facial',rank:'good',rl:'Recommended',why:'Peptide + HA infusion for fine lines. Lymphatic massage for lift.',price:'₹5,500–9,000',sess:'Monthly for 3 months'});
+  }else{
+    t.push({name:'Face Pilates (Facial Workout)',rank:'best',rl:'Best Match',why:'TFC signature — cleanse, stimulate, tone, infuse. All skin types.',price:'₹4,000–6,500',sess:'Start here'});
+    t.push({name:'Hydralogica Facial',rank:'good',rl:'Recommended',why:'Deep hydration + barrier repair + antioxidants. Ideal first-visit.',price:'₹3,500–5,500',sess:'Monthly'});
+  }
+  if(hasPol&&!concern.includes('Dullness'))t.push({name:'Delhi Pollution Detox — Add-On',rank:'opt',rl:'Add-On',why:`Pollution score ${s.pollution}/10. Neutralises PM2.5, rebuilds antioxidant barrier.`,price:'₹2,000–3,500',sess:'Every session in smog season'});
+  if(occs.includes('Bride'))t.push({name:'6-Month Bridal Journey',rank:'opt',rl:'Bridal',why:'Structured 6-month programme — correction + maintenance + glow finale.',price:'Custom package',sess:'Full programme'});
+  if(occs.includes('Holi'))t.push({name:'Holi Pre + Post Protocol',rank:'opt',rl:'Seasonal',why:'Pre: strengthen barrier. Post: repair colour damage, prevent pigmentation flare.',price:'₹4,000–6,000 each',sess:'2 sessions around Holi'});
+  return t.slice(0,5);
+}
+
+// JOURNEY
+function journey(c,s){
+  const concern=c['Primary Concern']||'skin wellness';const goal=c['Primary Goal']||'skin health';
+  const occs=c['Occasions']||'';const weeks=c['Occasion Weeks']||'';
+  const bridal=occs.includes('Bride');const urgent=weeks.includes('2 weeks')||weeks.includes('2-4');
+  const title=bridal?'Bridal Face Journey — 6 Month Plan':urgent?'Accelerated Journey — Occasion Focus':'Personalised Face Journey — 3 Month Plan';
+  const sub=`${concern} · ${goal} · ${c['Budget']||'—'} · PRELIMINARY`;
+  const steps=[];
+  if(bridal){
+    steps.push({n:1,l:'Month 1–2',name:'Deep Assessment & Baseline',desc:'2 deep cleanse sessions. Establish skin baseline and start barrier strengthening.',timing:'Sessions 1–2 — monthly'});
+    steps.push({n:2,l:'Month 2–3',name:'Targeted Correction Phase',desc:`Address ${concern.toLowerCase()} with 3 sessions. Introduce actives slowly.`,timing:'Sessions 3–5 — every 3 weeks'});
+    steps.push({n:3,l:'Month 4',name:'Glow & Radiance Phase',desc:'Brightening + vitamin C antioxidant protocols.',timing:'Sessions 6–7 — every 3 weeks'});
+    steps.push({n:4,l:'Month 5',name:'Firming & Contouring',desc:'Face Pilates — lift, jawline definition, lymphatic drainage.',timing:'Sessions 8–9 — every 2–3 weeks'});
+    steps.push({n:5,l:'Month 6',name:'Glow Maximisation',desc:'4 weeks before + 10 days before. Purely hydrating — no actives at final session.',timing:'4 weeks & 10 days before wedding'});
+    steps.push({n:6,l:'Wedding Day',name:'Written Home Protocol',desc:'SPF + hydration brief. No new products. Morning-of instructions in writing.',timing:'Written plan at Session 10'});
+  }else if(urgent){
+    steps.push({n:1,l:'Today',name:'Deep Cleanse & Barrier Reset',desc:`Focus on ${concern.toLowerCase()}. Gentle — assess skin before occasion.`,timing:'Today'});
+    steps.push({n:2,l:'Session 2',name:'Targeted Glow Treatment',desc:'Vitamin C infusion, antioxidant protection, brightening.',timing:'5–7 days after Session 1'});
+    steps.push({n:3,l:'Day Before',name:'Hydration & Glow Finale',desc:'Purely hydrating. No exfoliation. Maximise plumpness and luminosity.',timing:`1–2 days before ${occs.split(',')[0]||'occasion'}`});
+  }else{
+    steps.push({n:1,l:'Today — Session 1',name:'Full Assessment & First Treatment',desc:`Skin analysis + targeted treatment for ${concern.toLowerCase()}. Document baseline with photos.`,timing:'Today — ~75 mins'});
+    steps.push({n:2,l:'Week 3–4',name:'Correction Phase',desc:'Targeted actives. Assess response to Session 1.',timing:'3–4 weeks after today'});
+    steps.push({n:3,l:'Week 6–8',name:'Intensification',desc:'Deepen treatment based on progress.',timing:'6–8 weeks after today'});
+    steps.push({n:4,l:'Month 3+',name:'Maintenance & Glow',desc:'Monthly maintenance. Consider package upgrade if results visible.',timing:'Monthly from month 3'});
+  }
+  return{title,sub,steps};
+}
+
+// HELPERS
+function fmtTs(ts){if(!ts)return'—';try{const d=new Date(ts);return isNaN(d)?ts:d.toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}catch{return ts;}}
+function calcAge(d){if(!d)return'—';try{const dt=new Date(d);return isNaN(dt)?'—':Math.floor((Date.now()-dt)/3.156e10)+'y';}catch{return'—';}}
+</script>
+</body>
+</html>
